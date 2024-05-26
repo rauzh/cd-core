@@ -2,6 +2,7 @@ package sign_contract
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 
 	cdtime "github.com/rauzh/cd-core/time"
@@ -143,7 +144,7 @@ func TestPublishRequestUseCase_proceedToManager(t *testing.T) {
 				tt.dependencies(f)
 			}
 
-			signReqHandler := InitSignContractProceedToManagerHandler(f.scBroker, f.signReqRepo, f.managerRepo)
+			signReqHandler := InitSignContractProceedToManagerHandler(f.scBroker, f.signReqRepo, f.managerRepo, slog.Default())
 
 			// act
 			err := signReqHandler.(*SignContractProceedToManagerHandler).proceedToManager(tt.in.signReq)

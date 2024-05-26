@@ -2,6 +2,7 @@ package publish
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 
 	cdtime "github.com/rauzh/cd-core/time"
@@ -50,9 +51,9 @@ func _newMockPublishReqDepFields(t *testing.T) *_depFields {
 
 	statMockFetcher := statFetcher.NewStatFetcher(t)
 
-	trkSvc := trackService.NewTrackService(trkMockRepo)
-	rlsSvc := rlsService.NewReleaseService(trkSvc, transactionMock, rlsMockRepo)
-	statSvc := statService.NewStatisticsService(trkSvc, statMockFetcher, statMockRepo, rlsSvc)
+	trkSvc := trackService.NewTrackService(trkMockRepo, slog.Default())
+	rlsSvc := rlsService.NewReleaseService(trkSvc, transactionMock, rlsMockRepo, slog.Default())
+	statSvc := statService.NewStatisticsService(trkSvc, statMockFetcher, statMockRepo, rlsSvc, slog.Default())
 
 	critCollection, _ := criteria.BuildCollection(
 		&publish_criteria.ArtistReleaseLimitPerSeasonCriteriaFabric{PublicationRepo: pbcMockRepo, ArtistRepo: mockArtRepo},
@@ -178,7 +179,7 @@ func TestPublishRequestUseCase_proceedToManager(t *testing.T) {
 				tt.dependencies(f)
 			}
 
-			publishReqHandler := InitPublishProceedToManagerConsumerHandler(f.pbBroker, f.publishRepo, f.artistRepo, f.criterias)
+			publishReqHandler := InitPublishProceedToManagerConsumerHandler(f.pbBroker, f.publishRepo, f.artistRepo, f.criterias, slog.Default())
 
 			// act
 			err := publishReqHandler.(*PublishProceedToManagerConsumerHandler).proceedToManager(tt.in.pubReq)
