@@ -2,7 +2,8 @@ package publish_criteria
 
 import (
 	"context"
-	criteria "cookdroogers/internal/requests/criteria_controller"
+
+	criteria "github.com/rauzh/cd-core/requests/criteria_controller"
 
 	cdtime "github.com/rauzh/cd-core/time"
 

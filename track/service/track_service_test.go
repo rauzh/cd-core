@@ -1,6 +1,7 @@
 package service
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/rauzh/cd-core/models"
@@ -22,7 +23,7 @@ func TestTrackService_Get(t *testing.T) {
 		Artists:  []uint64{82, 4},
 	}, nil).Once()
 
-	ts := NewTrackService(mockTrackRepo)
+	ts := NewTrackService(mockTrackRepo, slog.Default())
 
 	track, err := ts.Get(1234)
 	assert.Nil(t, err)

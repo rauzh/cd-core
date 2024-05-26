@@ -2,7 +2,8 @@ package publish_criteria
 
 import (
 	"context"
-	criteria "cookdroogers/internal/requests/criteria_controller"
+
+	criteria "github.com/rauzh/cd-core/requests/criteria_controller"
 
 	"github.com/rauzh/cd-core/repo"
 	"github.com/rauzh/cd-core/requests/base"
