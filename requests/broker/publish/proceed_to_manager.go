@@ -3,6 +3,7 @@ package publish
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/rauzh/cd-core/requests/base"
 	criteria "github.com/rauzh/cd-core/requests/criteria_controller"
@@ -17,6 +18,7 @@ func (handler *PublishProceedToManagerConsumerHandler) proceedToManager(pubReq *
 
 	err := handler.publishRepo.Update(ctx, pubReq)
 	if err != nil {
+		handler.logger.Error("PUBLISH_HANDLER proceedToManager", slog.Any("error", err))
 		return fmt.Errorf("cant proceed publish request to manager: update repo with err %w", err)
 	}
 
@@ -24,13 +26,20 @@ func (handler *PublishProceedToManagerConsumerHandler) proceedToManager(pubReq *
 
 	artist, err := handler.artistRepo.GetByUserID(ctx, pubReq.ApplierID)
 	if err != nil {
+		handler.logger.Error("PUBLISH_HANDLER proceedToManager", slog.Any("error", err))
 		return fmt.Errorf("cant proceed publish request to manager: get artist with err %w", err)
 	}
 
 	pubReq.ManagerID = artist.ManagerID
 	pubReq.Status = base.OnApprovalRequest
 
-	return handler.publishRepo.Update(ctx, pubReq)
+	err = handler.publishRepo.Update(ctx, pubReq)
+	if err != nil {
+		handler.logger.Error("PUBLISH_HANDLER proceedToManager", slog.Any("error", err))
+		return err
+	}
+	handler.logger.Info("PUBLISH_HANDLER proceedToManager", "pubreq_manager", pubReq.ManagerID)
+	return nil
 }
 
 func (handler *PublishProceedToManagerConsumerHandler) computeDegree(pubReq *publish.PublishRequest) {

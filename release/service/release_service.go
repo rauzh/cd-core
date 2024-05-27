@@ -39,6 +39,10 @@ func NewReleaseService(
 
 func (rlsSvc *ReleaseService) validate(release *models.Release) error {
 
+	rlsSvc.logger.Debug("RELEASE_SERVICE validate",
+		"release_title", release.Title,
+		"release_date_creation", release.DateCreation)
+
 	if release.Title == "" {
 		return releaseErrors.ErrNoTitle
 	}
@@ -61,13 +65,17 @@ func (rlsSvc *ReleaseService) Create(release *models.Release, tracks []*models.T
 	ctx := context.Background()
 	return rlsSvc.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
 		if err := rlsSvc.uploadTracks(ctx, release, tracks); err != nil {
+			rlsSvc.logger.Error("RELEASE_SERVICE Create",
+				"TRANSACTION", "uploadTracks", slog.Any("error", err))
 			return fmt.Errorf("can't create release with err %w", err)
 		}
 
 		if err := rlsSvc.repo.Create(ctx, release); err != nil {
+			rlsSvc.logger.Error("RELEASE_SERVICE Create",
+				"TRANSACTION", "Create release repo", slog.Any("error", err))
 			return fmt.Errorf("can't create release with err %w", err)
 		}
-
+		rlsSvc.logger.Info("RELEASE_SERVICE Create", "release_title", release.Title)
 		return nil
 	})
 }
@@ -90,8 +98,10 @@ func (rlsSvc *ReleaseService) Get(releaseID uint64) (*models.Release, error) {
 	release, err := rlsSvc.repo.Get(context.Background(), releaseID)
 
 	if err != nil {
+		rlsSvc.logger.Error("RELEASE_SERVICE Get", slog.Any("error", err))
 		return nil, fmt.Errorf("can't get release with err %w", err)
 	}
+	rlsSvc.logger.Debug("RELEASE_SERVICE Get", "release_title", release.Title)
 	return release, nil
 }
 
@@ -99,8 +109,10 @@ func (rlsSvc *ReleaseService) GetAllByArtist(artistID uint64) ([]models.Release,
 	releases, err := rlsSvc.repo.GetAllByArtist(context.Background(), artistID)
 
 	if err != nil {
+		rlsSvc.logger.Error("RELEASE_SERVICE GetAllByArtist", slog.Any("error", err))
 		return nil, fmt.Errorf("can't get release with err %w", err)
 	}
+	rlsSvc.logger.Debug("RELEASE_SERVICE GetAllByArtist", "releases_len", len(releases))
 	return releases, nil
 }
 
@@ -108,22 +120,28 @@ func (rlsSvc *ReleaseService) GetAllTracks(release *models.Release) ([]models.Tr
 	tracks, err := rlsSvc.repo.GetAllTracks(context.Background(), release)
 
 	if err != nil {
+		rlsSvc.logger.Error("RELEASE_SERVICE GetAllTracks", slog.Any("error", err))
 		return nil, fmt.Errorf("can't get release with err %w", err)
 	}
+	rlsSvc.logger.Debug("RELEASE_SERVICE GetAllTracks", "tracks_len", len(tracks))
 	return tracks, nil
 }
 
 func (rlsSvc *ReleaseService) Update(release *models.Release) error {
 	if err := rlsSvc.repo.Update(context.Background(), release); err != nil {
+		rlsSvc.logger.Error("RELEASE_SERVICE Update", slog.Any("error", err))
 		return fmt.Errorf("can't update release with err %w", err)
 	}
+	rlsSvc.logger.Info("RELEASE_SERVICE Update", "release_title", release.Title)
 	return nil
 }
 
 func (rlsSvc *ReleaseService) UpdateStatus(id uint64, stat models.ReleaseStatus) error {
 	if err := rlsSvc.repo.UpdateStatus(context.Background(), id, stat); err != nil {
+		rlsSvc.logger.Error("RELEASE_SERVICE UpdateStatus", slog.Any("error", err))
 		return fmt.Errorf("can't update release with err %w", err)
 	}
+	rlsSvc.logger.Info("RELEASE_SERVICE UpdateStatus", "release_id", id)
 	return nil
 }
 

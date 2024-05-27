@@ -2,6 +2,7 @@ package sign_contract
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/rauzh/cd-core/requests/base"
 	"github.com/rauzh/cd-core/requests/sign_contract"
@@ -15,12 +16,17 @@ func (handler *SignContractProceedToManagerHandler) proceedToManager(signReq *si
 
 	managerID, err := handler.mngRepo.GetRandManagerID(ctx)
 	if err != nil {
+		handler.logger.Error("SIGN_HANDLER proceedToManager", slog.Any("error", err))
 		return errors.ErrCantFindManager
 	}
 
-	//fmt.Println("!!! MNG ID", managerID)
-
 	signReq.ManagerID = managerID
 
-	return handler.signReqRepo.Update(ctx, signReq)
+	err = handler.signReqRepo.Update(ctx, signReq)
+	if err != nil {
+		handler.logger.Error("SIGN_HANDLER proceedToManager", slog.Any("error", err))
+		return err
+	}
+	handler.logger.Info("SIGN_HANDLER proceedToManager", "signreq_manager", signReq.ManagerID)
+	return nil
 }
