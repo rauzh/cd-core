@@ -54,8 +54,11 @@ func (statSvc *StatisticsService) Create(stat *models.Statistics) error {
 	stat.Date = cdtime.GetToday()
 
 	if err := statSvc.repo.Create(context.Background(), stat); err != nil {
+		statSvc.logger.Error("STAT_SERVICE Create", slog.Any("error", err))
 		return fmt.Errorf("can't create stats with err %w", err)
 	}
+
+	statSvc.logger.Debug("STAT_SERVICE Create", "stat_id", stat.StatID)
 	return nil
 }
 
@@ -63,8 +66,10 @@ func (statSvc *StatisticsService) GetByID(statID uint64) (*models.Statistics, er
 	stat, err := statSvc.repo.GetByID(context.Background(), statID)
 
 	if err != nil {
+		statSvc.logger.Error("STAT_SERVICE GetByID", "stat_id", statID, slog.Any("error", err))
 		return nil, fmt.Errorf("can't get stats with err %w", err)
 	}
+	statSvc.logger.Debug("STAT_SERVICE GetByID", "stat_id", statID)
 	return stat, nil
 }
 
@@ -76,8 +81,11 @@ func (statSvc *StatisticsService) GetForTrack(trackID uint64) ([]models.Statisti
 	stats, err := statSvc.repo.GetForTrack(context.Background(), trackID)
 
 	if err != nil {
+		statSvc.logger.Error("STAT_SERVICE GetForTrack", "track_id", trackID, slog.Any("error", err))
 		return nil, fmt.Errorf("can't get stats for track %d with err %w", trackID, err)
 	}
+
+	statSvc.logger.Debug("STAT_SERVICE GetForTrack", "track_id", trackID)
 	return stats, nil
 }
 
@@ -85,18 +93,20 @@ func (statSvc *StatisticsService) FetchByRelease(release *models.Release) error 
 
 	tracks, err := statSvc.releaseService.GetAllTracks(release)
 	if err != nil {
+		statSvc.logger.Error("STAT_SERVICE FetchByRelease can't get tracks", "release", release.ReleaseID, slog.Any("error", err))
 		return fmt.Errorf("can't fetch stats with err %w", err)
 	}
 
 	stats, err := statSvc.fetcher.Fetch(tracks)
 	if err != nil {
+		statSvc.logger.Error("STAT_SERVICE FetchByRelease can't fetch", "release", release.ReleaseID, slog.Any("error", err))
 		return fmt.Errorf("can't fetch stats with err %w", err)
 	}
 
 	statSvc.logger.Debug("FetchByRelease", "stats", stats)
 
 	if len(stats) < 1 {
-		statSvc.logger.Info("no stats to fetch", "release", release.ReleaseID)
+		statSvc.logger.Info("STAT_SERVICE FetchByRelease no stats to fetch", "release", release.ReleaseID)
 		return errors.New("no stats to fetch")
 	}
 
@@ -105,8 +115,11 @@ func (statSvc *StatisticsService) FetchByRelease(release *models.Release) error 
 	}
 
 	if err = statSvc.repo.CreateMany(context.Background(), stats); err != nil {
+		statSvc.logger.Error("STAT_SERVICE FetchByRelease can't create many", "release_id", release.ReleaseID, slog.Any("error", err))
 		return fmt.Errorf("can't create stats with err %w", err)
 	}
+
+	statSvc.logger.Info("STAT_SERVICE FetchByRelease", "release_id", release.ReleaseID)
 
 	return nil
 }

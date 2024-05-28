@@ -68,6 +68,8 @@ func (sctUseCase *SignContractRequestUseCase) Apply(request base.IRequest) error
 		return err
 	}
 
+	sctUseCase.logger.Info("SIGNREQ_UC Apply", "req", signReq.RequestID)
+
 	return nil
 }
 
@@ -89,18 +91,22 @@ func (sctUseCase *SignContractRequestUseCase) Accept(request base.IRequest) erro
 	ctx := context.Background()
 	return sctUseCase.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
 		if err := sctUseCase.userRepo.UpdateType(ctx, artist.UserID, models.ArtistUser); err != nil {
+			sctUseCase.logger.Error("SIGNREQ_UC TRANSACTION Accept", "req", signReq.RequestID, slog.Any("error", err))
 			return fmt.Errorf("can't update user with err %w", err)
 		}
 
 		if err := sctUseCase.artistRepo.Create(ctx, &artist); err != nil {
+			sctUseCase.logger.Error("SIGNREQ_UC TRANSACTION Accept", "req", signReq.RequestID, slog.Any("error", err))
 			return fmt.Errorf("can't create artist %s with err %w", artist.Nickname, err)
 		}
 
 		signReq.Status = base.ClosedRequest
 		if err := sctUseCase.repo.Update(ctx, signReq); err != nil {
+			sctUseCase.logger.Error("SIGNREQ_UC TRANSACTION Accept", "req", signReq.RequestID, slog.Any("error", err))
 			return fmt.Errorf("can't update reqiest with err %w", err)
 		}
 
+		sctUseCase.logger.Debug("SIGNREQ_UC Accept", "req", signReq.RequestID)
 		return nil
 	})
 }
@@ -114,6 +120,8 @@ func (sctUseCase *SignContractRequestUseCase) Decline(request base.IRequest) err
 
 	signReq.Status = base.ClosedRequest
 	signReq.Description = base.DescrDeclinedRequest
+
+	sctUseCase.logger.Debug("SIGNREQ_UC Decline", "req", signReq.RequestID)
 
 	return sctUseCase.repo.Update(context.Background(), signReq)
 }

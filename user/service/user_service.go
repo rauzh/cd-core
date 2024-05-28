@@ -78,18 +78,24 @@ func (usrSvc *UserService) Create(newUser *models.User) error {
 		return fmt.Errorf("can'r create user: %w", err)
 	}
 
+	usrSvc.logger.Info("USER_SERVICE Create", "id", newUser.UserID)
+
 	return nil
 }
 
 func (usrSvc *UserService) Login(login, password string) (*models.User, error) {
 	user, err := usrSvc.repo.GetByEmail(context.Background(), login)
 	if err != nil {
+		usrSvc.logger.Error("USER_SERVICE Login", "login", login, slog.Any("error", err))
 		return nil, err
 	}
 
 	if password != user.Password {
+		usrSvc.logger.Info("USER_SERVICE Login", "login", login, "error", "invalid password")
 		return nil, errors.New("invalid password")
 	}
+
+	usrSvc.logger.Info("USER_SERVICE Login", "id", user.UserID)
 
 	return user, nil
 }
@@ -97,8 +103,10 @@ func (usrSvc *UserService) Login(login, password string) (*models.User, error) {
 func (usrSvc *UserService) GetByEmail(email string) (*models.User, error) {
 	user, err := usrSvc.repo.GetByEmail(context.Background(), email)
 	if err != nil {
+		usrSvc.logger.Error("USER_SERVICE GetByEmail", "email", email, slog.Any("error", err))
 		return nil, fmt.Errorf("can't get user with err %w", err)
 	}
+	usrSvc.logger.Debug("USER_SERVICE GetByEmail", "id", user.UserID)
 	return user, nil
 }
 
@@ -106,22 +114,30 @@ func (usrSvc *UserService) Get(id uint64) (*models.User, error) {
 	user, err := usrSvc.repo.Get(context.Background(), id)
 
 	if err != nil {
+		usrSvc.logger.Error("USER_SERVICE Get", "id", id, slog.Any("error", err))
 		return nil, fmt.Errorf("can't get user with err %w", err)
 	}
+	usrSvc.logger.Debug("USER_SERVICE Get", "id", user.UserID)
 	return user, nil
 }
 
 func (usrSvc *UserService) Update(user *models.User) error {
 	if err := usrSvc.repo.Update(context.Background(), user); err != nil {
+		usrSvc.logger.Error("USER_SERVICE Update", "id", user.UserID, slog.Any("error", err))
 		return fmt.Errorf("can't update user with err %w", err)
 	}
+
+	usrSvc.logger.Info("USER_SERVICE Update", "id", user.UserID)
 	return nil
 }
 
 func (usrSvc *UserService) UpdateType(userID uint64, typ models.UserType) error {
 	if err := usrSvc.repo.UpdateType(context.Background(), userID, typ); err != nil {
+		usrSvc.logger.Error("USER_SERVICE UpdateType", "id", userID, slog.Any("error", err))
 		return fmt.Errorf("can't update user with err %w", err)
 	}
+
+	usrSvc.logger.Info("USER_SERVICE UpdateType", "id", userID)
 	return nil
 }
 

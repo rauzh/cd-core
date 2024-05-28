@@ -71,12 +71,16 @@ func (publishUseCase *PublishRequestUseCase) Apply(request base.IRequest) error 
 	}
 
 	if err := publishUseCase.repo.Create(context.Background(), pubReq); err != nil {
+		publishUseCase.logger.Error("PUBREQ_UC Apply", slog.Any("error", err))
 		return fmt.Errorf("can't apply publish request with err %w", err)
 	}
 
 	if err := publishUseCase.sendProceedToManagerMSG(pubReq); err != nil {
+		publishUseCase.logger.Error("PUBREQ_UC Apply", "req", pubReq.RequestID, slog.Any("error", err))
 		return err
 	}
+
+	publishUseCase.logger.Info("PUBREQ_UC Apply", "req", pubReq.RequestID)
 
 	return nil
 }
@@ -87,23 +91,28 @@ func (publishUseCase *PublishRequestUseCase) checkRelease(pubReq *publish.Publis
 
 	release, err := publishUseCase.releaseRepo.Get(ctx, pubReq.ReleaseID)
 	if err != nil {
+		publishUseCase.logger.Error("PUBREQ_UC checkRelease", slog.Any("error", err))
 		return err
 	}
 
 	if release.Status != models.UnpublishedRelease {
+		publishUseCase.logger.Warn("PUBREQ_UC checkRelease", "invalid_release_status", release.Status)
 		return errors.ErrReleaseAlreadyPublished
 	}
 
 	artist, err := publishUseCase.artistRepo.GetByUserID(ctx, pubReq.ApplierID)
 	if err != nil {
+		publishUseCase.logger.Error("PUBREQ_UC checkRelease", slog.Any("error", err))
 		return err
 	}
 
 	if release.ArtistID != artist.ArtistID {
+		publishUseCase.logger.Warn("PUBREQ_UC checkRelease", "invalid_request_artist_id", artist.ArtistID)
 		return errors.ErrNotOwner
 	}
 
 	if artist.ContractTerm.Before(pubReq.ExpectedDate) {
+		publishUseCase.logger.Warn("PUBREQ_UC checkRelease", "contract_terminates_before", pubReq.ExpectedDate)
 		return errors.ErrEndContract
 	}
 
@@ -115,6 +124,7 @@ func (publishUseCase *PublishRequestUseCase) checkRelease(pubReq *publish.Publis
 func (publishUseCase *PublishRequestUseCase) Accept(request base.IRequest) error {
 
 	if err := request.Validate(publish.PubReq); err != nil {
+		publishUseCase.logger.Warn("PUBREQ_UC Accept", slog.Any("error", err))
 		return err
 	}
 	pubReq := request.(*publish.PublishRequest)
@@ -129,17 +139,22 @@ func (publishUseCase *PublishRequestUseCase) Accept(request base.IRequest) error
 	return publishUseCase.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
 
 		if err := publishUseCase.publicationRepo.Create(ctx, &publication); err != nil {
+			publishUseCase.logger.Error("PUBREQ_UC TRANSACTION Apply", "req", pubReq.RequestID, slog.Any("error", err))
 			return fmt.Errorf("can't create publication with err %w", err)
 		}
 
 		if err := publishUseCase.releaseRepo.UpdateStatus(ctx, publication.ReleaseID, models.PublishedRelease); err != nil {
+			publishUseCase.logger.Error("PUBREQ_UC TRANSACTION Apply", "req", pubReq.RequestID, slog.Any("error", err))
 			return fmt.Errorf("can't update publication with err %w", err)
 		}
 
 		pubReq.Status = base.ClosedRequest
 		if err := publishUseCase.repo.Update(ctx, pubReq); err != nil {
+			publishUseCase.logger.Error("PUBREQ_UC TRANSACTION Apply", "req", pubReq.RequestID, slog.Any("error", err))
 			return fmt.Errorf("can't update request.go with err %w", err)
 		}
+
+		publishUseCase.logger.Debug("PUBREQ_UC Accept", "req", pubReq.RequestID)
 
 		return nil
 	})
@@ -154,6 +169,8 @@ func (publishUseCase *PublishRequestUseCase) Decline(request base.IRequest) erro
 
 	pubReq.Status = base.ClosedRequest
 	pubReq.Description = base.DescrDeclinedRequest
+
+	publishUseCase.logger.Debug("PUBREQ_UC Decline", "req", pubReq.RequestID)
 
 	return publishUseCase.repo.Update(context.Background(), pubReq)
 }
