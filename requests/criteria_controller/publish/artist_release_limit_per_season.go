@@ -13,11 +13,13 @@ import (
 )
 
 const (
-	ArtistReleaseLimitPerSeason     criteria.CriteriaName = "No releases from artist more than limit"
-	LimitPerSeason                                        = 2
-	ExplanationArtistReleaseLimit                         = "More than limit releases per season"
-	DiffArtistReleaseLimitPerSeason                       = -1
+	ExplanationArtistReleaseLimit   = "More than limit releases per season"
+	DiffArtistReleaseLimitPerSeason = -1
 )
+
+const ArtistReleaseLimitPerSeason criteria.CriteriaName = "No releases from artist more than limit"
+
+var LimitPerSeason = 2
 
 type ArtistReleaseLimitPerSeasonCriteria struct {
 	publicationRepo repo.PublicationRepo
